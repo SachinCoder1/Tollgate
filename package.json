@@ -1,0 +1,22 @@
+{
+  "name": "keepertoll",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Developer toolkit that turns KeeperHub workflows into x402-paid endpoints. Hackathon submission for ETHGlobal Open Agents.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "pnpm -r --workspace-concurrency=1 run check",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "build": "pnpm -r --workspace-concurrency=1 run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "pnpm@9.12.0"
+}

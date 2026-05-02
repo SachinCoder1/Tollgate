@@ -1,0 +1,10 @@
+{
+  "name": "@keepertoll/reference-workflow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "KeeperHub workflow JSON used in the keepertoll demo (MultiChainAaveHealth).",
+  "license": "MIT",
+  "scripts": {
+    "check": "node -e \"console.log('reference-workflow: nothing to typecheck (data only)')\""
+  }
+}

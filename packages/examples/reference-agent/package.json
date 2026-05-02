@@ -1,0 +1,21 @@
+{
+  "name": "@keepertoll/reference-agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reference TypeScript agent that calls the keepertoll gateway via @keepertoll/client.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@keepertoll/client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

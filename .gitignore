@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+CLAUDE.md
+FEEDBACK.md
+RECON.md
+RESOURCES.md
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Runtime state
+.keepertoll/
+*.log
+
+# Misc
+coverage/
+.cache/
