@@ -1,9 +1,20 @@
 {
   "name": "@keepertoll/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "keeperhub-publish — CLI for KeeperHub workflow authors to publish workflows as x402-paid endpoints.",
+  "keywords": ["keeperhub", "x402", "cli", "agent", "workflow", "usdc", "publish"],
   "license": "MIT",
+  "author": "Sachin Gurjar and the keepertoll authors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sachingurjar/keepertoll.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/sachingurjar/keepertoll/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/sachingurjar/keepertoll/issues"
+  },
   "type": "module",
   "bin": {
     "keeperhub-publish": "./dist/cli.js"
@@ -19,12 +30,19 @@
   "files": ["dist", "README.md"],
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc -p tsconfig.json",
-    "dev": "node --import tsx src/cli.ts"
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "dev": "node --import tsx src/cli.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.0"
   }
 }

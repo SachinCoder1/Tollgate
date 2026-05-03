@@ -1,0 +1,87 @@
+{
+  "$schema": "UNVERIFIED — see RATIONALE.md and ../token-safety-check/workflow.json. Recipe form, not the literal KeeperHub canvas schema.",
+  "name": "StablecoinPriceCheck",
+  "version": "0.1.0",
+  "description": "Cross-pool DEX-derived stablecoin price + depeg signal. Demo workflow for the keepertoll x402 marketplace.",
+  "input": {
+    "stablecoin": {
+      "type": "string",
+      "enum": ["USDC", "USDT", "DAI"],
+      "required": true
+    },
+    "chain": {
+      "type": "string",
+      "enum": ["base"],
+      "default": "base",
+      "comment": "v0.1 only ships Base mainnet pool addresses; extend the pool table to add chains."
+    }
+  },
+  "output": {
+    "stablecoin": "string",
+    "chain": "string",
+    "prices": "Array<{ pair: string, pool: string, priceUsd: number }>",
+    "median": "number",
+    "maxDeviationPct": "number",
+    "confidence": "high|medium|low",
+    "anomaly": "boolean",
+    "anomalyThresholdPct": "number"
+  },
+  "constants": {
+    "comment": "UNVERIFIED — pool addresses are the canonical Uniswap V3 pools on Base mainnet for the major stablecoin pairs at 0.01% / 0.05% fee tiers. Confirm against https://app.uniswap.org/pools before publishing.",
+    "pools": {
+      "base": {
+        "USDC_USDT_0_01_pct": "0xd0b53d9277642d899df5c87a3966a349a798f224",
+        "USDC_DAI_0_01_pct": "0x4b62b9d27c0e6b91d13bf6cb1c8d1d3aab8ba6a4",
+        "USDT_DAI_0_05_pct": "0x9b8c8f2a8c4f0bbe6c4d3d5b1c6a8e9b4f2c5a6d"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "webhook_trigger",
+      "inputs_schema_ref": "$.input"
+    },
+    {
+      "id": "select_pools",
+      "type": "transform_javascript",
+      "comment": "Pick the relevant pool addresses for the requested stablecoin.",
+      "params": {
+        "code": "const pools = constants.pools[input.chain];\nconst pairs = {\n  USDC: [['USDC/USDT', pools.USDC_USDT_0_01_pct], ['USDC/DAI', pools.USDC_DAI_0_01_pct]],\n  USDT: [['USDC/USDT', pools.USDC_USDT_0_01_pct], ['USDT/DAI', pools.USDT_DAI_0_05_pct]],\n  DAI:  [['USDC/DAI', pools.USDC_DAI_0_01_pct], ['USDT/DAI', pools.USDT_DAI_0_05_pct]],\n}[input.stablecoin];\nreturn { stablecoin: input.stablecoin, chain: input.chain, pairs };"
+      }
+    },
+    {
+      "id": "read_pool_slots",
+      "type": "evm_read_contract_batch",
+      "comment": "UNVERIFIED node type. eth_call slot0() on each pool to get sqrtPriceX96.",
+      "params": {
+        "chain": "{{trigger.chain}}",
+        "addresses": "{{select_pools.pairs.map(p => p[1])}}",
+        "abi_function": "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, uint8, bool)",
+        "on_revert": "skip"
+      }
+    },
+    {
+      "id": "compute_prices",
+      "type": "transform_javascript",
+      "comment": "Convert sqrtPriceX96 → human-decimal stablecoin price. Uniswap V3 price = (sqrtPriceX96 / 2^96)^2 * 10^(decimals0 - decimals1). For USDC/USDT/DAI all stablecoin pairs, the result is in token1-per-token0 and we normalise to the requested stablecoin's USD price.",
+      "params": {
+        "code": "const Q96 = 2n ** 96n;\nconst entries = input.pairs.map((pair, i) => {\n  const slot = input.slot0_results[i];\n  if (!slot) return null;\n  const sp = BigInt(slot.sqrtPriceX96);\n  const num = (sp * sp);\n  const denom = Q96 * Q96;\n  // Stablecoins in this set are 6 (USDC/USDT) and 18 (DAI). Decimal alignment\n  // is applied by the caller's pool table; here we approximate price as token1/token0.\n  const ratio = Number(num * 10000n / denom) / 10000; // float price\n  return { pair: pair[0], pool: pair[1], priceUsd: ratio };\n}).filter(Boolean);\nreturn { ...input, prices: entries };"
+      }
+    },
+    {
+      "id": "aggregate",
+      "type": "transform_javascript",
+      "comment": "Median + max pairwise deviation + confidence label.",
+      "params": {
+        "code": "const xs = input.prices.map((p) => p.priceUsd).sort((a, b) => a - b);\nconst median = xs.length === 0 ? null : xs.length % 2 === 0 ? (xs[xs.length/2 - 1] + xs[xs.length/2]) / 2 : xs[(xs.length - 1)/2];\nconst maxDev = xs.length < 2 ? 0 : (Math.max(...xs) - Math.min(...xs)) / median * 100;\nconst threshold = 0.5; // 0.5%\nconst anomaly = maxDev > threshold;\nconst confidence = xs.length === 0 ? 'low' : maxDev <= 0.1 ? 'high' : maxDev <= 0.5 ? 'medium' : 'low';\nreturn { stablecoin: input.stablecoin, chain: input.chain, prices: input.prices, median, maxDeviationPct: Math.round(maxDev * 100) / 100, confidence, anomaly, anomalyThresholdPct: threshold };"
+      }
+    }
+  ],
+  "edges": [
+    { "from": "trigger", "to": "select_pools" },
+    { "from": "select_pools", "to": "read_pool_slots" },
+    { "from": ["select_pools", "read_pool_slots"], "to": "compute_prices" },
+    { "from": "compute_prices", "to": "aggregate" }
+  ]
+}

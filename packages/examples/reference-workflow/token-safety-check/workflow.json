@@ -1,0 +1,143 @@
+{
+  "$schema": "UNVERIFIED — KeeperHub does not publish a public workflow JSON schema as of RECON Q7. This file is a node/edge recipe used to recreate the workflow on app.keeperhub.com (see CREATION_STEPS.md). The exact node `type` strings and parameter names will need to be matched against `list_action_schemas` MCP output at recreation time.",
+  "name": "TokenSafetyCheck",
+  "version": "0.1.0",
+  "description": "Given an ERC-20 address, returns metadata + safety signals + a low/medium/high risk label. Demo workflow for the keepertoll x402 marketplace.",
+  "input": {
+    "tokenAddress": {
+      "type": "string",
+      "format": "0x[40 hex]",
+      "required": true,
+      "description": "ERC-20 token contract to evaluate"
+    },
+    "chain": {
+      "type": "string",
+      "enum": ["base", "base-sepolia"],
+      "default": "base",
+      "description": "Execution chain for the on-chain reads"
+    }
+  },
+  "output": {
+    "tokenAddress": "string",
+    "chain": "string",
+    "name": "string|null",
+    "symbol": "string|null",
+    "decimals": "number|null",
+    "totalSupply": "string|null",
+    "signals": {
+      "in_uniswap_default_list": "boolean",
+      "has_metadata": "boolean",
+      "is_proxy": "boolean",
+      "owner_renounced": "boolean"
+    },
+    "risk": "low|medium|high",
+    "recommendation": "string"
+  },
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "webhook_trigger",
+      "comment": "UNVERIFIED node type. KeeperHub workflows are typically triggered by webhook, schedule, or contract event; webhook is required so our gateway can invoke this with paid input.",
+      "inputs_schema_ref": "$.input"
+    },
+    {
+      "id": "read_name",
+      "type": "evm_read_contract",
+      "comment": "UNVERIFIED node type. eth_call to the ERC-20 contract for name(). On revert, return null and continue.",
+      "params": {
+        "chain": "{{trigger.chain}}",
+        "address": "{{trigger.tokenAddress}}",
+        "abi_function": "function name() view returns (string)",
+        "on_revert": "null"
+      }
+    },
+    {
+      "id": "read_symbol",
+      "type": "evm_read_contract",
+      "params": {
+        "chain": "{{trigger.chain}}",
+        "address": "{{trigger.tokenAddress}}",
+        "abi_function": "function symbol() view returns (string)",
+        "on_revert": "null"
+      }
+    },
+    {
+      "id": "read_decimals",
+      "type": "evm_read_contract",
+      "params": {
+        "chain": "{{trigger.chain}}",
+        "address": "{{trigger.tokenAddress}}",
+        "abi_function": "function decimals() view returns (uint8)",
+        "on_revert": "null"
+      }
+    },
+    {
+      "id": "read_total_supply",
+      "type": "evm_read_contract",
+      "params": {
+        "chain": "{{trigger.chain}}",
+        "address": "{{trigger.tokenAddress}}",
+        "abi_function": "function totalSupply() view returns (uint256)",
+        "on_revert": "null"
+      }
+    },
+    {
+      "id": "read_owner",
+      "type": "evm_read_contract",
+      "comment": "OpenZeppelin Ownable owner() — reverts if not present, treated as no-owner.",
+      "params": {
+        "chain": "{{trigger.chain}}",
+        "address": "{{trigger.tokenAddress}}",
+        "abi_function": "function owner() view returns (address)",
+        "on_revert": "null"
+      }
+    },
+    {
+      "id": "read_eip1967_impl",
+      "type": "evm_read_storage",
+      "comment": "EIP-1967 proxy implementation slot. Non-zero ⇒ proxy contract.",
+      "params": {
+        "chain": "{{trigger.chain}}",
+        "address": "{{trigger.tokenAddress}}",
+        "slot": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+      }
+    },
+    {
+      "id": "fetch_uniswap_list",
+      "type": "http_request",
+      "comment": "Uniswap default token list, refreshed daily by Uniswap Labs.",
+      "params": {
+        "method": "GET",
+        "url": "https://tokens.uniswap.org/",
+        "cache_ttl_seconds": 86400
+      }
+    },
+    {
+      "id": "compute_signals",
+      "type": "transform_javascript",
+      "comment": "Combine the upstream reads into a normalised signal object.",
+      "params": {
+        "code": "const lower = (s) => (s ?? '').toLowerCase();\nconst inList = (input.uniswap_list?.tokens ?? []).some((t) => lower(t.address) === lower(input.tokenAddress) && (input.chain === 'base' ? t.chainId === 8453 : t.chainId === 84532));\nreturn {\n  tokenAddress: input.tokenAddress,\n  chain: input.chain,\n  name: input.name,\n  symbol: input.symbol,\n  decimals: input.decimals,\n  totalSupply: input.totalSupply,\n  signals: {\n    in_uniswap_default_list: inList,\n    has_metadata: input.name != null && input.symbol != null && input.decimals != null,\n    is_proxy: input.eip1967_impl != null && input.eip1967_impl !== '0x0000000000000000000000000000000000000000000000000000000000000000',\n    owner_renounced: input.owner == null || input.owner === '0x0000000000000000000000000000000000000000',\n  },\n};"
+      }
+    },
+    {
+      "id": "score_risk",
+      "type": "transform_javascript",
+      "comment": "Map signals → risk label + human recommendation. Tunable thresholds.",
+      "params": {
+        "code": "const s = input.signals;\nlet risk = 'low';\nlet why = [];\nif (!s.has_metadata) { risk = 'high'; why.push('missing standard ERC-20 metadata'); }\nelse if (!s.in_uniswap_default_list && s.is_proxy && !s.owner_renounced) { risk = 'high'; why.push('not on Uniswap default list, is upgradeable proxy, owner not renounced'); }\nelse if (!s.in_uniswap_default_list) { risk = 'medium'; why.push('not on Uniswap default list'); }\nelse if (s.is_proxy && !s.owner_renounced) { risk = 'medium'; why.push('upgradeable proxy with active owner'); }\nconst rec = risk === 'low' ? 'Safe to interact based on the signals checked.' : risk === 'medium' ? 'Proceed with caution: ' + why.join('; ') + '.' : 'Do not interact: ' + why.join('; ') + '.';\nreturn { ...input, risk, recommendation: rec };"
+      }
+    }
+  ],
+  "edges": [
+    { "from": "trigger", "to": "read_name" },
+    { "from": "trigger", "to": "read_symbol" },
+    { "from": "trigger", "to": "read_decimals" },
+    { "from": "trigger", "to": "read_total_supply" },
+    { "from": "trigger", "to": "read_owner" },
+    { "from": "trigger", "to": "read_eip1967_impl" },
+    { "from": "trigger", "to": "fetch_uniswap_list" },
+    { "from": ["read_name", "read_symbol", "read_decimals", "read_total_supply", "read_owner", "read_eip1967_impl", "fetch_uniswap_list"], "to": "compute_signals" },
+    { "from": "compute_signals", "to": "score_risk" }
+  ]
+}

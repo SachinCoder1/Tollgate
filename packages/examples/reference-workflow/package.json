@@ -1,9 +1,17 @@
 {
   "name": "@keepertoll/reference-workflow",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "KeeperHub workflow JSON used in the keepertoll demo (MultiChainAaveHealth).",
+  "description": "Two reference KeeperHub workflow recipes used in the keepertoll demo: TokenSafetyCheck ($0.02) and StablecoinPriceCheck ($0.03).",
+  "keywords": ["keeperhub", "x402", "workflow", "example", "token-safety", "stablecoin"],
   "license": "MIT",
+  "author": "Sachin Gurjar and the keepertoll authors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sachingurjar/keepertoll.git",
+    "directory": "packages/examples/reference-workflow"
+  },
+  "homepage": "https://github.com/sachingurjar/keepertoll/tree/main/packages/examples/reference-workflow#readme",
   "scripts": {
     "check": "node -e \"console.log('reference-workflow: nothing to typecheck (data only)')\""
   }

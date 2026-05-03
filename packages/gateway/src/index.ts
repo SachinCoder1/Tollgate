@@ -1,11 +1,34 @@
 /**
  * `@keepertoll/gateway` — public surface.
  *
- * Phase 1 stub. Real exports (registry, x402 middleware factory, KeeperHub
- * proxy) land in Phase 2.
+ * Re-exports the small set of types + classes other packages (CLI, SDK,
+ * tests) consume. The actual HTTP server lives in `./server.ts`.
  */
 
-/** Version of the gateway server, exposed for `/healthz` and CLI handshakes. */
-export const GATEWAY_VERSION = "0.0.0";
-
-export { app } from "./server.js";
+export { GATEWAY_VERSION } from "./version.js";
+export { Registry } from "./registry.js";
+export type { StoredWorkflow } from "./registry.js";
+export { createApp, type GatewayConfig, type BuiltGateway } from "./server.js";
+export {
+  GatewayError,
+  RegistryCorruptError,
+  WorkflowNotRegisteredError,
+  PaymentRequiredError,
+  PaymentValidationError,
+  SettlementError,
+  KeeperHubAuthError,
+  KeeperHubWorkflowNotFoundError,
+  KeeperHubUpstreamError,
+  KeeperHubTimeoutError,
+  AdminAuthError,
+  ValidationError,
+} from "./errors.js";
+export type {
+  Currency,
+  RegisteredWorkflow,
+  RegisterWorkflowRequest,
+  RunResponse,
+  SettlementMeta,
+  X402Network,
+} from "./types.js";
+export { SUPPORTED_CURRENCIES, SUPPORTED_X402_NETWORKS } from "./types.js";

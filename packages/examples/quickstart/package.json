@@ -1,0 +1,29 @@
+{
+  "name": "@keepertoll/quickstart",
+  "version": "0.1.0",
+  "private": true,
+  "description": "60-second quickstart: pay $0.02 USDC on Base Sepolia and call a real KeeperHub workflow.",
+  "keywords": ["keeperhub", "x402", "quickstart", "example", "agent"],
+  "license": "MIT",
+  "author": "Sachin Gurjar and the keepertoll authors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sachingurjar/keepertoll.git",
+    "directory": "packages/examples/quickstart"
+  },
+  "homepage": "https://github.com/sachingurjar/keepertoll/tree/main/packages/examples/quickstart#readme",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --import tsx src/quickstart.ts"
+  },
+  "dependencies": {
+    "@keepertoll/client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

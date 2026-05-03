@@ -1,9 +1,19 @@
 {
   "name": "keepertoll",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Developer toolkit that turns KeeperHub workflows into x402-paid endpoints. Hackathon submission for ETHGlobal Open Agents.",
+  "keywords": ["keeperhub", "x402", "agent", "workflow", "usdc", "base-sepolia", "marketplace"],
   "license": "MIT",
+  "author": "Sachin Gurjar and the keepertoll authors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sachingurjar/keepertoll.git"
+  },
+  "homepage": "https://github.com/sachingurjar/keepertoll#readme",
+  "bugs": {
+    "url": "https://github.com/sachingurjar/keepertoll/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -12,7 +22,8 @@
     "check": "pnpm -r --workspace-concurrency=1 run check",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "build": "pnpm -r --workspace-concurrency=1 run build"
+    "build": "pnpm -r --workspace-concurrency=1 run build",
+    "test": "pnpm -r --workspace-concurrency=1 run test"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

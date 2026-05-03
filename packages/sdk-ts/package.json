@@ -1,9 +1,20 @@
 {
   "name": "@keepertoll/client",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "TypeScript SDK for calling x402-paid KeeperHub workflows. Companion to the keeperhub-publish CLI.",
+  "keywords": ["keeperhub", "x402", "sdk", "agent", "client", "workflow", "usdc", "viem"],
   "license": "MIT",
+  "author": "Sachin Gurjar and the keepertoll authors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sachingurjar/keepertoll.git",
+    "directory": "packages/sdk-ts"
+  },
+  "homepage": "https://github.com/sachingurjar/keepertoll/tree/main/packages/sdk-ts#readme",
+  "bugs": {
+    "url": "https://github.com/sachingurjar/keepertoll/issues"
+  },
   "type": "module",
   "exports": {
     ".": {
@@ -17,6 +28,11 @@
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "x402": "^1.2.0",
+    "x402-fetch": "^1.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

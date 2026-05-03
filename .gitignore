@@ -2,10 +2,24 @@
 node_modules/
 .pnpm-store/
 
+# Internal docs — kept private per user direction. Will be published manually
+# later if they want. Heads up: the FEEDBACK.md bounty entry needs to be
+# publicly accessible at submission time to qualify for the $250 KeeperHub
+# Builder Feedback Bounty (publish before May 6 if claiming it).
 CLAUDE.md
-FEEDBACK.md
+MEMORY.md
 RECON.md
 RESOURCES.md
+FEEDBACK.md
+SUBMISSION.md
+DEMO.md
+DEPLOY.md
+DISTRIBUTION.md
+DEMO.html
+CONTRIBUTING.md
+docs/
+packages/examples/reference-workflow/RATIONALE.md
+packages/examples/reference-workflow/*/CREATION_STEPS.md
 
 # Build artifacts
 dist/

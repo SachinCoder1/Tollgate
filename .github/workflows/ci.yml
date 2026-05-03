@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    name: TypeScript (typecheck + lint + test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run check
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test (vitest, all packages)
+        run: pnpm -r run test
+
+  python:
+    name: Python SDK (ruff + pyright + pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/sdk-py
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Create venv + install
+        run: |
+          uv venv --python 3.12 .venv
+          uv pip install --python .venv/bin/python -e '.[dev]'
+
+      - name: Ruff
+        run: .venv/bin/python -m ruff check src tests examples
+
+      - name: Pyright
+        run: .venv/bin/python -m pyright
+
+      - name: Pytest (unit)
+        run: .venv/bin/python -m pytest
+
+  python_integration:
+    name: Python SDK (integration vs built gateway)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [typescript, python]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Install + build gateway
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @keepertoll/gateway build
+
+      - name: Install Python SDK
+        working-directory: packages/sdk-py
+        run: |
+          uv venv --python 3.12 .venv
+          uv pip install --python .venv/bin/python -e '.[dev]'
+
+      - name: Run integration test
+        working-directory: packages/sdk-py
+        env:
+          KEEPERTOLL_INTEGRATION: "1"
+        run: .venv/bin/python -m pytest tests/test_integration.py -v
