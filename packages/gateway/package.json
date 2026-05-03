@@ -28,8 +28,8 @@
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.json",
-    "dev": "node --import tsx src/server.ts",
-    "start": "node dist/server.js",
+    "dev": "node --env-file=../../.env --import tsx src/server.ts",
+    "start": "node --env-file=../../.env dist/server.js",
     "test": "vitest run"
   },
   "dependencies": {
